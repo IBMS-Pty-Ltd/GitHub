@@ -1,0 +1,69 @@
+name: octopus
+
+on:
+  workflow_call:
+    inputs:
+      infrastructure-prefix:
+        description: "Prefix of the octopus infrastructure package"
+        required: true
+        type: string
+      version-number:
+        description: "Build version number"
+        required: true
+        type: string
+    secrets:
+      FEED_ACCESSTOKEN:
+        required: true
+      OCTOPUS_URL:
+        required: true
+      OCTOPUS_API_KEY:
+        required: true
+
+jobs:
+  package-infrastructure:
+    runs-on: ubuntu-latest
+    env:
+      staging-directory: infra/compiled/
+      zip-file: ${{ inputs.infrastructure-prefix }}.${{ inputs.version-number }}.zip
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Checkout submodules
+        shell: bash
+        run: |
+          git -c http.https://dev.azure.com/AvaniSolutions/Avani/_git/Avani.Core.Infra.Bicep.extraheader="AUTHORIZATION: bearer ${{ secrets.FEED_ACCESSTOKEN }}" submodule update --init --recursive
+
+      - name: Build bicep files
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az bicep build --file Infrastructure/infrastructure.bicep --outdir ${{ env.staging-directory }}
+          # do not remove the --outdir parameter; the build breaks without it; I have no idea why
+
+      # This is only to maintain the same folder structure as the Azure DevOps pipeline
+      - name: Copy files
+        shell: bash
+        run: |
+          mkdir -p temp/Infrastructure
+          cp -r Infrastructure temp/Infrastructure
+
+      - name: Compress infrastructure files
+        shell: bash
+        run: |
+          cd temp
+          zip -r ../${{ env.zip-file }} Infrastructure
+
+      - name: Upload artifact to Octopus
+        uses: OctopusDeploy/push-package-action@v3
+        env:
+          OCTOPUS_URL: ${{ secrets.OCTOPUS_URL }}
+          OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
+          OCTOPUS_SPACE: 'Default'
+        with:
+          overwrite_mode: 'OverwriteExisting'
+          packages: |
+            ${{ env.zip-file }}

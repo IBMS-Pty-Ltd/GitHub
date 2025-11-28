@@ -1,0 +1,38 @@
+name: version
+
+on:
+  workflow_call:
+    inputs:
+      git-version-path:
+        description: "Path to GitVersionConfig.yml"
+        required: false
+        type: string
+        default: './GitVersionConfig.yml'
+    outputs:
+      version:
+        description: The new version number
+        value: ${{ jobs.get-version-info.outputs.version-number }}
+
+jobs:
+  get-version-info:
+    runs-on: ubuntu-latest
+    outputs:
+      version-number: ${{ steps.set-version.outputs.semVer }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup GitVersion
+        uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: '6.5.x'
+
+      - name: Determine version with GitVersion
+        id: set-version
+        uses: gittools/actions/gitversion/execute@v4
+        with:
+          configFilePath: ${{ inputs.git-version-path }}
+

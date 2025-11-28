@@ -1,4 +1,6 @@
-name: release 
+name: release
+# Build a single docker image and push infrastructure artiface to octopus
+# NOTE: if doing multiple docket images, then will need to use individual "_" workflow templates in repo
 
 on:
   workflow_call:
@@ -34,100 +36,23 @@ on:
 
 jobs:
   version-info:
-    runs-on: ubuntu-latest
-    outputs:
-      version-number: ${{ steps.set-version.outputs.semVer }}
+    uses: ./.github/workflows/_version-info.yml
+    with:
+      configFilePath: ${{ inputs.git-version-path }}
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Setup GitVersion
-        uses: gittools/actions/gitversion/setup@v4
-        with:
-          versionSpec: '6.5.x'
-
-      - name: Determine version with GitVersion
-        id: set-version
-        uses: gittools/actions/gitversion/execute@v4
-        with:
-          configFilePath: ${{ inputs.git-version-path }}
-  
   build-docker:
     needs: version-info
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Log in to Azure Container Registry
-        uses: azure/docker-login@v1
-        with:
-          login-server: conregavanidevaueast.azurecr.io
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ${{ inputs.dockerfile-path }}
-          build-args: |
-            FEED_ACCESSTOKEN=${{ secrets.FEED_ACCESSTOKEN }}
-          push: true
-          tags: |
-            conregavanidevaueast.azurecr.io/${{ inputs.image-name }}:${{ needs.version-info.outputs.version-number }}
-            conregavanidevaueast.azurecr.io/${{ inputs.image-name }}:latest
+    uses: ./.github/workflows/_docker-image.yml
+    with:
+      image-name: ${{ inputs.image-name }}
+      dockerfile-path: ${{ inputs.dockerfile-path }}
+      version-number: ${{ needs.version-info.outputs.version-number }}
+    secrets: inherit
 
   package-infrastructure:
     needs: version-info
-    runs-on: ubuntu-latest
-    env:      
-      staging-directory: infra/compiled/
-      zip-file: ${{ inputs.infrastructure-prefix }}.${{ needs.version-info.outputs.version-number }}.zip
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Checkout submodules
-        shell: bash
-        run: |
-          git -c http.https://dev.azure.com/AvaniSolutions/Avani/_git/Avani.Core.Infra.Bicep.extraheader="AUTHORIZATION: bearer ${{ secrets.FEED_ACCESSTOKEN }}" submodule update --init --recursive
-
-      - name: Build bicep files
-        uses: azure/cli@v2
-        with:
-          azcliversion: latest
-          inlineScript: |            
-            az bicep build --file Infrastructure/infrastructure.bicep --outdir ${{ env.staging-directory }}
-          # do not remove the --outdir parameter; the build breaks without it; I have no idea why
-
-      # This is only to maintain the same folder structure as the Azure DevOps pipeline
-      - name: Copy files
-        shell: bash
-        run: |
-          mkdir -p temp/Infrastructure
-          cp -r Infrastructure temp/Infrastructure
-
-      - name: Compress infrastructure files
-        shell: bash
-        run: |
-          cd temp
-          zip -r ../${{ env.zip-file }} Infrastructure
-
-      - name: Upload artifact to Octopus
-        uses: OctopusDeploy/push-package-action@v3
-        env:
-          OCTOPUS_URL: ${{ secrets.OCTOPUS_URL }}
-          OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
-          OCTOPUS_SPACE: 'Default'
-        with:
-          overwrite_mode: 'OverwriteExisting'
-          packages: |
-            ${{ env.zip-file }}
+    uses: ./.github/workflows/_octopus-artifact.yml
+    with:
+      infrastructure-prefix: ${{ inputs.infrastructure-prefix }}
+      version-number: ${{ needs.version-info.outputs.version-number }}
+    secrets: inherit
