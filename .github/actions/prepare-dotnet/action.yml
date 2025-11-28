@@ -1,11 +1,10 @@
 name: Prepare dotnet dependencies
 description: Installs the dotnet CLI and restores packages
 inputs:
-  working-directory:
-    description: "The working directory for the job. Defaults to '.' which is the root of the repository. Do not include trailing '/'"
-    required: false
+  solution-path:
+    description: "Path to the solution file to restore. If not provided, searches the current directory for a project or solution"
+    required: true
     type: string
-    default: "."
   dependency-config-path:
     description: "Path to the file containing project dependencies (e.g. packages.json, Directory.Packages.props, etc.)"
     required: true
@@ -33,5 +32,5 @@ runs:
           ${{ runner.os }}-nuget-
 
     - name: Restore dependencies
-      working-directory: ${{ inputs.working-directory }}
       shell: bash
+      run: dotnet restore ${{ inputs.solution-path }}

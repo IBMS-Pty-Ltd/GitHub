@@ -4,14 +4,17 @@ Common GitHub files and templates that can be re-used across repos
 
 ### Usage
 
-Can reference the `./.github/workflows/` templates prefixed with `_` in actual repositories as:
+Reference the `./.github/workflows/` templates prefixed in actual repositories like:
 
 ```yml
+permissions:
+  contents: read
+
 jobs:
   pull-request:
-    permissions:
-      pull-requests: read
-    uses: IBMS-Pty-Ltd/GitHub/.github/workflows/_dotnet_pull_request.yml@main
+    # permissions:
+    #   contents: read
+    uses: IBMS-Pty-Ltd/GitHub/.github/workflows/dotnet_pull_request.yml@main
     with:
       dotnet-version: 8.0.x
     secrets:

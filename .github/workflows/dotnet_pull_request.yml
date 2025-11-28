@@ -3,11 +3,11 @@ name: dotnet_pull-request
 on:
   workflow_call:
     inputs:
-      working-directory:
-        description: "The working directory for the job (where the solution file is). Defaults to '.' which is the root of the repository. Do not include trailing '/'"
+      solution-path:
+        description: "Path to the solution file to restore. If not provided, searches the current directory for a project or solution"
         required: false
         type: string
-        default: "."
+        default: '.'
       dotnet-version:
         description: ".NET Core Version"
         required: false
@@ -21,9 +21,6 @@ on:
     secrets:
       FEED_ACCESSTOKEN:
         required: true
-
-permissions:
-  contents: read
 
 jobs:
   build-and-test:
@@ -44,12 +41,10 @@ jobs:
         with:
           dependency-config-path: ${{ inputs.dependency-config-path }}
           dotnet-version: ${{ inputs.dotnet-version }}
-          working-directory: ${{ inputs. working-directory }}
+          solution-path: ${{ inputs. solution-path }}
 
       - name: Build Solution
-        working-directory: ${{ inputs.working-directory }}
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build ${{ inputs.solution-path }} --no-restore --configuration Release
 
       - name: Run Tests
-        working-directory: ${{ inputs.working-directory }}
-        run: dotnet test --no-build
+        run: dotnet test ${{ inputs.solution-path }} --no-build
