@@ -34,7 +34,9 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare NuGet Credential Provider
-        uses: ./.github/workflows/_temp.yml
+        shell: bash
+        run: |
+          curl -L https://aka.ms/install-artifacts-credprovider.sh  | sh
 
       - name: Setup .NET
         uses: ./.github/actions/prepare-dotnet
