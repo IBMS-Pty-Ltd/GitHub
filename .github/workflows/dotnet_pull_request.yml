@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare NuGet Credential Provider
-        uses: ./.github/actions/nuget-authenticate/prepare-cred-provider
+        uses: ./.github/workflows/_action-nuget-add-credential.yml
 
       - name: Setup .NET
         uses: ./.github/actions/prepare-dotnet

@@ -9,12 +9,12 @@ It is also used to pull any submodules needed to build the application and the i
 
 It requires the permissions: `packaging:read`, `packaging:write`, `code:read`
 
-### ACR_Username
+### ACR_USERNAME
 This is the username of the admin account for the Azure Container Registry.
 
 Can be found in the `settings` tab of the ACR.
 
-### ACR_Password
+### ACR_PASSWORD
 This is the password of the admin account for the Azure Container Registry.
 
 Can be found in the `settings` tab of the ACR.

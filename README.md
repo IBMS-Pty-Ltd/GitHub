@@ -15,4 +15,5 @@ jobs:
       solution-path: 'MyProject.slnx'
     secrets:
       FEED_ACCESSTOKEN: ${{ secrets.FEED_ACCESSTOKEN }}
+    # or "secrets: inherit"
 ```
