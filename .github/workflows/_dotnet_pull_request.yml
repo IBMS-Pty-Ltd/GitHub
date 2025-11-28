@@ -1,0 +1,55 @@
+name: dotnet_pull-request
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: "The working directory for the job (where the solution file is). Defaults to '.' which is the root of the repository. Do not include trailing '/'"
+        required: false
+        type: string
+        default: "."
+      dotnet-version:
+        description: ".NET Core Version"
+        required: false
+        type: string
+        default: '8.0.x'
+      dependency-config-path:
+        description: "Path to the Directory.Packages.props)"
+        required: false
+        type: string
+        default: './Directory.Packages.props'
+    secrets:
+      FEED_ACCESSTOKEN:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: '{"endpointCredentials": [{"endpoint":"https://pkgs.dev.azure.com/AvaniSolutions/_packaging/IBMS/nuget/v3/index.json","password":"${{ secrets.FEED_ACCESSTOKEN }}"}]}'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Prepare NuGet Credential Provider
+        uses: ./.github/actions/nuget-authenticate/prepare-cred-provider
+
+      - name: Setup .NET
+        uses: ./.github/actions/prepare-dotnet
+        with:
+          dependency-config-path: ${{ inputs.dependency-config-path }}
+          dotnet-version: ${{ inputs.dotnet-version }}
+          working-directory: ${{ inputs. working-directory }}
+
+      - name: Build Solution
+        working-directory: ${{ inputs.working-directory }}
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run Tests
+        working-directory: ${{ inputs.working-directory }}
+        run: dotnet test --no-build

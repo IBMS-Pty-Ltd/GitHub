@@ -1,0 +1,32 @@
+name: Add NuGet Credential
+description: Adds a credential to the Azure Artifacts Credential Provider
+
+inputs:
+  feed-url:
+    description: "The URL of the Azure Artifacts feed"
+    required: true
+    type: string
+  access-token:
+    description: "The access token for the feed"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Debug step 1
+      shell: bash
+      run: |
+        echo "Input feed-url: ${{ inputs.feed-url }}"
+        echo "Input access-token: ${{ inputs.access-token }}"
+        echo "Credentials are $VSS_NUGET_EXTERNAL_FEED_ENDPOINTS"
+
+    - name: Add credential
+      shell: bash
+      run: |
+        export TEMP_FEED_CREDENTIALS='{"endpoint":"${{ inputs.feed-url }}","password":"${{ inputs.access-token }}"}'
+        if [[ -z VSS_NUGET_EXTERNAL_FEED_ENDPOINTS ]]; then
+          export VSS_NUGET_EXTERNAL_FEED_ENDPOINTS="{\"endpointCredentials\": [${TEMP_FEED_CREDENTIALS}]}"
+        else
+          export VSS_NUGET_EXTERNAL_FEED_ENDPOINTS="${VSS_NUGET_EXTERNAL_FEED_ENDPOINTS%??},${TEMP_FEED_CREDENTIALS}]}"
+        fi
+        echo "VSS_NUGET_EXTERNAL_FEED_ENDPOINTS=$VSS_NUGET_EXTERNAL_FEED_ENDPOINTS" >> $GITHUB_ENV

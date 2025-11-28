@@ -1,0 +1,10 @@
+name: Prepare Azure Artifacts Credential Provider
+description: Install the NuGet Credential Provider for Azure Artifacts. Documentation can be found at https://github.com/microsoft/artifacts-credprovider
+
+runs:
+  using: composite
+  steps:
+    - name: Set up NuGet Credential Provider for Azure Artifacts
+      shell: bash
+      run: |
+        curl -L https://aka.ms/install-artifacts-credprovider.sh  | sh
