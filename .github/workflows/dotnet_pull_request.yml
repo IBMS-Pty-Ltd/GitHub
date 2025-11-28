@@ -14,7 +14,7 @@ on:
         type: string
         default: '8.0.x'
       dependency-config-path:
-        description: "Path to the Directory.Packages.props"
+        description: "Path to the Directory.Packages.props)"
         required: false
         type: string
         default: './Directory.Packages.props'
@@ -28,14 +28,13 @@ jobs:
     env:
       VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: '{"endpointCredentials": [{"endpoint":"https://pkgs.dev.azure.com/AvaniSolutions/_packaging/IBMS/nuget/v3/index.json","password":"${{ secrets.FEED_ACCESSTOKEN }}"}]}'
     steps:
-      - name: Checkout caller repository
+      - name: Checkout repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          path: caller   # <— key fix
 
       - name: Prepare NuGet Credential Provider
-        uses: ./.github/actions/nuget-authenticate/prepare-cred-provider
+        uses: ./.github/workflows/_temp.yml
 
       - name: Setup .NET
         uses: ./.github/actions/prepare-dotnet
@@ -45,7 +44,7 @@ jobs:
           solution-path: ${{ inputs.solution-path }}
 
       - name: Build Solution
-        run: dotnet build caller/${{ inputs.solution-path }} --no-restore --configuration Release
+        run: dotnet build ${{ inputs.solution-path }} --no-restore --configuration Release
 
       - name: Run Tests
-        run: dotnet test caller/${{ inputs.solution-path }} --no-build
+        run: dotnet test ${{ inputs.solution-path }} --no-build
