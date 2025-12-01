@@ -55,5 +55,5 @@ jobs:
           tags: |
             ${{ inputs.docker-registry-uri }}/${{ inputs.image-name }}:${{ inputs.version-number }}
             ${{ inputs.docker-registry-uri }}/${{ inputs.image-name }}:latest
-          cache-from: type=registry,ref=${{ inputs.docker-registry-uri }}/${{ inputs.image-name }}:latest
-          cache-to: type=inline,mode=min
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
