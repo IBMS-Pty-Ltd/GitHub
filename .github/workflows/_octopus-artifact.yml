@@ -21,11 +21,6 @@ on:
         required: false
         type: string
         default: 'Infrastructure/dev.bicepparam'
-      az-validation-resource-group:
-        description: "Azure resource group for the application. Only used for validation, so should be dev RG"
-        required: false
-        type: string
-        default: 'rg-avanicoreplatform-dev-auseast'
     secrets:
       FEED_ACCESSTOKEN:
         required: true
