@@ -61,4 +61,19 @@ jobs:
         run: dotnet build ${{ inputs.solution-path }} --no-restore
 
       - name: Run Tests
-        run: dotnet test ${{ inputs.solution-path }} --no-build
+        run: dotnet test ${{ inputs.solution-path }} --no-build --logger "trx;LogFileName=test_results.trx" --results-directory ./TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: ./TestResults
+
+      - name: Report test results on PR
+        if: ${{ !cancelled() }}
+        uses: dorny/test-reporter@v1
+        with:
+          name: dotnet-tests
+          path: ./TestResults/*.trx
+          reporter: dotnet-trx
+          fail-on-error: true
