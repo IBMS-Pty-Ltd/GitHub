@@ -64,7 +64,7 @@ jobs:
         with:
           azcliversion: latest
           inlineScript: |
-            az deployment group validate -g ${{ inputs.az-validation-resource-group }} -f ${{ inputs.bicep-file-path }} -p ${{ inputs.bicepparam-file-path }}
+            az deployment group what-if -f ${{ inputs.bicep-file-path }} -p ${{ inputs.bicepparam-file-path }} -g not-a-real-group
 
       # This is only to maintain the same folder structure as the Azure DevOps pipeline
       - name: Copy files
