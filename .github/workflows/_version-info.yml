@@ -9,7 +9,7 @@ on:
         type: string
         default: './GitVersionConfig.yml'
     outputs:
-      version:
+      version-number:
         description: The new version number
         value: ${{ jobs.get-version-info.outputs.version-number }}
 

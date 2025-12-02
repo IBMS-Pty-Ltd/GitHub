@@ -1,4 +1,4 @@
-name: dotnet_pull-request
+name: dotnet_pull_request
 
 on:
   workflow_call:
