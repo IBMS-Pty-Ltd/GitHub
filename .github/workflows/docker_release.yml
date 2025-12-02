@@ -40,6 +40,13 @@ jobs:
     with:
       git-version-path: ${{ inputs.git-version-path }}
 
+  version:
+    needs: version-info
+    runs-on: ubuntu-latest
+    steps:
+      - name: Version
+        run: echo "${{ needs.version-info.outputs.version-number }}"
+
   build-docker:
     needs: version-info
     uses: ./.github/workflows/_docker-image.yml
