@@ -73,7 +73,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: dorny/test-reporter@v1
         with:
-          name: dotnet-tests
+          name: dotnet-test-results
           path: ./TestResults/*.trx
           reporter: dotnet-trx
           fail-on-error: true
