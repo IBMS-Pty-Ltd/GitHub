@@ -36,3 +36,5 @@ jobs:
         with:
           configFilePath: ${{ inputs.git-version-path }}
 
+      - name: Version
+        run: echo "${{ steps.set-version.outputs.semVer }}"
