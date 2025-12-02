@@ -40,26 +40,19 @@ jobs:
     with:
       git-version-path: ${{ inputs.git-version-path }}
 
-  version:
+  build-docker:
     needs: version-info
-    runs-on: ubuntu-latest
-    steps:
-      - name: Version
-        run: echo "${{ needs.version-info.outputs.version-number }}"
+    uses: ./.github/workflows/_docker-image.yml
+    with:
+      image-name: ${{ inputs.image-name }}
+      dockerfile-path: ${{ inputs.dockerfile-path }}
+      version-number: ${{ needs.version-info.outputs.version-number }}
+    secrets: inherit
 
-  # build-docker:
-  #   needs: version-info
-  #   uses: ./.github/workflows/_docker-image.yml
-  #   with:
-  #     image-name: ${{ inputs.image-name }}
-  #     dockerfile-path: ${{ inputs.dockerfile-path }}
-  #     version-number: ${{ needs.version-info.outputs.version-number }}
-  #   secrets: inherit
-
-  # package-infrastructure:
-  #   needs: version-info
-  #   uses: ./.github/workflows/_octopus-artifact.yml
-  #   with:
-  #     infrastructure-prefix: ${{ inputs.infrastructure-prefix }}
-  #     version-number: ${{ needs.version-info.outputs.version-number }}
-  #   secrets: inherit
+  package-infrastructure:
+    needs: version-info
+    uses: ./.github/workflows/_octopus-artifact.yml
+    with:
+      infrastructure-prefix: ${{ inputs.infrastructure-prefix }}
+      version-number: ${{ needs.version-info.outputs.version-number }}
+    secrets: inherit
