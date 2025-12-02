@@ -11,6 +11,21 @@ on:
         description: "Build version number"
         required: true
         type: string
+      bicep-file-path:
+        description: "Entry bicep file path"
+        required: false
+        type: string
+        default: 'Infrastructure/infrastructure.bicep'
+      bicepparam-file-path:
+        description: "bicepparam file path"
+        required: false
+        type: string
+        default: 'Infrastructure/dev.bicepparam'
+      az-validation-resource-group:
+        description: "Azure resource group for the application. Only used for validation, so should be dev RG"
+        required: false
+        type: string
+        default: 'rg-avanicoreplatform-dev-auseast'
     secrets:
       FEED_ACCESSTOKEN:
         required: true
@@ -41,8 +56,15 @@ jobs:
         with:
           azcliversion: latest
           inlineScript: |
-            az bicep build --file Infrastructure/infrastructure.bicep --outdir ${{ env.staging-directory }}
+            az bicep build --file ${{ inputs.bicep-file-path }} --outdir ${{ env.staging-directory }}
           # do not remove the --outdir parameter; the build breaks without it; I have no idea why
+
+      - name: Validate bicep files
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az deployment group validate -g ${{ inputs.az-validation-resource-group }} -f ${{ inputs.bicep-file-path }} -p ${{ inputs.bicepparam-file-path }}
 
       # This is only to maintain the same folder structure as the Azure DevOps pipeline
       - name: Copy files
