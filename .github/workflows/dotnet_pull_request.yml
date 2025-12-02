@@ -69,7 +69,7 @@ jobs:
           name: TestResults
           path: ./TestResults
 
-      - name: Report test results on PR
+      - name: Report test results
         if: ${{ !cancelled() }}
         uses: dorny/test-reporter@v1
         with:
