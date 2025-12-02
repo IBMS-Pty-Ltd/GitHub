@@ -4,7 +4,7 @@ Common GitHub files and templates that can be re-used across repos
 
 ### Usage
 
-Reference the `./.github/workflows/` templates prefixed in actual repositories like:
+Reference the `./.github/workflows/` templates in actual repositories like:
 
 ```yml
 jobs:

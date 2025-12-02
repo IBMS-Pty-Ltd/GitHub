@@ -1,6 +1,6 @@
 name: release
 # Build a single docker image and push infrastructure artiface to octopus
-# NOTE: if doing multiple docket images, then will need to use individual "_" workflow templates in repo
+# NOTE: if doing multiple docket images, then will need to use individual "_" workflow templates in actual repo
 
 on:
   workflow_call:
@@ -38,7 +38,7 @@ jobs:
   version-info:
     uses: ./.github/workflows/_version-info.yml
     with:
-      configFilePath: ${{ inputs.git-version-path }}
+      git-version-path: ${{ inputs.git-version-path }}
 
   build-docker:
     needs: version-info
