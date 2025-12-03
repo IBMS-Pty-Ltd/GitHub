@@ -1,0 +1,135 @@
+name: dotnet_pull_request
+
+on:
+  workflow_call:
+    inputs:
+      # solution-path:
+      #   description: "Path to the solution file to restore. If not provided, searches the current directory for a project or solution"
+      #   required: false
+      #   type: string
+      #   default: '.'
+      # dependency-config-path:
+      #   description: "Path to the Directory.Packages.props)"
+      #   required: false
+      #   type: string
+      #   default: './Directory.Packages.props'
+      node-version:
+        description: "Node Version"
+        required: false
+        type: string
+        default: '20.x'
+    secrets:
+      NPM_TOKEN:
+        required: true
+      NEXT_PUBLIC_MUI_KEY:
+        required: true
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    # env:
+    #   DOCKER_REGISTRY: 'conregavanidevaueast.azurecr.io'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Configure npm authentication for Azure DevOps feed
+        run: |
+          # Azure DevOps Artifacts feed authentication
+          # Verify the token exists
+          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
+            echo "ERROR: NPM_TOKEN secret is not set or is empty!"
+            exit 1
+          fi
+
+          echo "NPM_TOKEN is set (length: ${#NPM_TOKEN})"
+
+          # Base64 encode just the PAT token
+          AUTH_TOKEN=$(echo -n "$NPM_TOKEN" | base64 -w 0)
+
+          # Write authentication to .npmrc using the exact format Azure DevOps expects
+          cat >> .npmrc <<EOF
+          //pkgs.dev.azure.com/AvaniSolutions/_packaging/avani-ui/npm/registry/:username=AvaniSolutions
+          //pkgs.dev.azure.com/AvaniSolutions/_packaging/avani-ui/npm/registry/:_password=${AUTH_TOKEN}
+          //pkgs.dev.azure.com/AvaniSolutions/_packaging/avani-ui/npm/registry/:email=npm requires email to be set but doesn't use the value
+          //pkgs.dev.azure.com/AvaniSolutions/_packaging/avani-ui/npm/:username=AvaniSolutions
+          //pkgs.dev.azure.com/AvaniSolutions/_packaging/avani-ui/npm/:_password=${AUTH_TOKEN}
+          //pkgs.dev.azure.com/AvaniSolutions/_packaging/avani-ui/npm/:email=npm requires email to be set but doesn't use the value
+          EOF
+
+          echo "✓ Authentication configured for Azure DevOps feed"
+          echo "✓ Added credentials for registry and npm paths"
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NEXT_PUBLIC_MUI_KEY: ${{ secrets.NEXT_PUBLIC_MUI_KEY }}
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test-ci
+
+      # Install the NuGet Credential Provider for Azure Artifacts. Documentation can be found at https://github.com/microsoft/artifacts-credprovider
+      # - name: Prepare NuGet Credential Provider
+      #   shell: bash
+      #   run: |
+      #     curl -L https://aka.ms/install-artifacts-credprovider.sh  | sh
+
+      # - name: Setup .NET
+      #   uses: actions/setup-dotnet@v4
+      #   with:
+      #     dotnet-version: ${{ inputs.dotnet-version }}
+
+      # - name: Cache dependencies
+      #   id: cache_deps
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: ~/.nuget/packages
+      #     key: ${{ runner.os }}-nuget-${{ hashFiles(inputs.dependency-config-path) }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-nuget-
+
+      # - name: Restore dependencies
+      #   shell: bash
+      #   run: dotnet restore ${{ inputs.solution-path }}
+
+      # - name: Build Solution
+      #   run: dotnet build ${{ inputs.solution-path }} --no-restore
+
+      # - name: Run Tests
+      #   run: dotnet test ${{ inputs.solution-path }} --no-build --logger "trx;LogFileName=test_results.trx" --results-directory ./TestResults
+
+      # - name: Upload test results
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: TestResults
+      #     path: ./TestResults
+
+      # - name: Report test results
+      #   if: ${{ !cancelled() }}
+      #   uses: dorny/test-reporter@v1
+      #   with:
+      #     name: dotnet-test-results
+      #     path: ./TestResults/*.trx
+      #     reporter: dotnet-trx
+      #     fail-on-error: true
+      #     fail-on-empty: false
