@@ -67,12 +67,20 @@ jobs:
   package-infrastructure:
     needs:
       - version-info
-      - build-docker
-    uses: ./.github/workflows/_octopus-artifact.yml
+    uses: ./.github/workflows/_infrastructure-artifact.yml
     with:
       infrastructure-prefix: ${{ inputs.infrastructure-prefix }}
       version-number: ${{ needs.version-info.outputs.version-number }}
       bicep-paths: ${{ inputs.bicep-paths }}
       bicep-folder: ${{ inputs.bicep-folder }}
       requires-bicep-submodule: ${{ inputs.requires-bicep-submodule }}
+    secrets: inherit
+
+  octopus-release:
+    needs:
+      - package-infrastructure
+      - build-docker
+    uses: ./.github/workflows/_octopus-upload.yml
+    with:
+      artifact-file: ${{ needs.package-infrastructure.outputs.artifact-file }}
     secrets: inherit
