@@ -80,7 +80,7 @@ jobs:
     needs:
       - package-infrastructure
       - build-docker
-    uses: ./.github/workflows/_octopus-upload.yml
+    uses: ./.github/workflows/_octopus-publish.yml
     with:
       artifact-file: ${{ needs.package-infrastructure.outputs.artifact-file }}
     secrets: inherit
