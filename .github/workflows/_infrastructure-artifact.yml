@@ -1,0 +1,99 @@
+name: infrastructure
+
+on:
+  workflow_call:
+    inputs:
+      infrastructure-prefix:
+        description: "Prefix of the octopus infrastructure package"
+        required: true
+        type: string
+      version-number:
+        description: "Build version number"
+        required: true
+        type: string
+      bicep-paths:
+        description: "Comma separated list of bicep build path(s)"
+        required: true
+        type: string
+      bicep-folder:
+        description: "Folder to bicep infrastructure files (eg /infra/bicep)"
+        required: true
+        type: string
+      requires-bicep-submodule:
+        description: "If need to checkout the Avani.Core.Infra.Bicep submodule (obsolete, should migrate to using avm)"
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      FEED_ACCESSTOKEN:
+        required: false
+    outputs:
+      artifact-file:
+        description: "The name of the generated infrastructure ZIP file"
+        value: ${{ jobs.package-infrastructure.outputs.artifact-file }}
+
+jobs:
+  package-infrastructure:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-file: ${{ steps.export-zip.outputs.artifact-file }}
+    env:
+      staging-directory: infra/compiled/
+      zip-file: ${{ inputs.infrastructure-prefix }}.${{ inputs.version-number }}.zip
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Checkout submodules
+        if: ${{ inputs.requires-bicep-submodule == 'true' }}
+        shell: bash
+        run: |
+          if [ -z "$FEED_ACCESSTOKEN" ]; then
+            echo "❌ Error: secrets.FEED_ACCESSTOKEN was not provided but is required to use bicep submodule"
+            exit 1
+          fi
+
+          git -c http.https://dev.azure.com/AvaniSolutions/Avani/_git/Avani.Core.Infra.Bicep.extraheader="AUTHORIZATION: bearer ${{ secrets.FEED_ACCESSTOKEN }}" submodule update --init --recursive
+
+      - name: Build Bicep files
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            IFS=',' read -ra FILES <<< "${{ inputs.bicep-paths }}"
+
+            for file in "${FILES[@]}"; do
+              trimmed=$(echo "$file" | xargs)  # remove whitespace
+
+              echo "🔨 Building Bicep file: $trimmed"
+
+              az bicep build \
+                --file "$trimmed" \
+                --outdir "${{ env.staging-directory }}"
+            done
+          # do not remove the --outdir parameter; the build breaks without it; I have no idea why
+
+      - name: Copy files
+        shell: bash
+        run: |
+          mkdir -p temp/Infrastructure
+          cp -r ${{ inputs.bicep-folder}} temp/Infrastructure
+
+      - name: Compress infrastructure files
+        shell: bash
+        run: |
+          cd temp
+          zip -r ../${{ env.zip-file }} Infrastructure
+
+      - name: Upload infrastructure artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.zip-file }}
+          path: ${{ env.zip-file }}
+
+      - name: Export artifact filename
+        id: export-zip
+        run: |
+          echo "artifact-file=${{ env.zip-file }}" >> "$GITHUB_OUTPUT"

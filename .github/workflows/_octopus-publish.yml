@@ -1,0 +1,35 @@
+name: octopus
+
+on:
+  workflow_call:
+    inputs:
+      artifact-file:
+        description: "The name of the generated infrastructure ZIP file"
+        required: true
+        type: string
+    secrets:
+      OCTOPUS_URL:
+        required: true
+      OCTOPUS_API_KEY:
+        required: true
+
+jobs:
+  publish-infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download infrastructure artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-file }}
+          path: ./
+
+      - name: Upload artifact to Octopus
+        uses: OctopusDeploy/push-package-action@v3
+        env:
+          OCTOPUS_URL: ${{ secrets.OCTOPUS_URL }}
+          OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
+          OCTOPUS_SPACE: 'Default'
+        with:
+          overwrite_mode: 'OverwriteExisting'
+          packages: |
+            ${{ inputs.artifact-file }}

@@ -5,34 +5,49 @@ name: release
 on:
   workflow_call:
     inputs:
+      git-version-path:
+        description: "Path to GitVersionConfig.yml"
+        required: false
+        type: string
+        default: './GitVersionConfig.yml'
       image-name:
         description: "Name of the docker image"
+        required: true
+        type: string
+      dockerfile-path:
+        description: "Path to Dockerfile that building"
         required: true
         type: string
       infrastructure-prefix:
         description: "Prefix of the octopus infrastructure package"
         required: true
         type: string
-      dockerfile-path:
-        description: "Path to Docker file that building"
+      bicep-paths:
+        description: "Comma separated list of bicep build path(s)"
         required: true
         type: string
-      git-version-path:
-        description: "Path to GitVersionConfig.yml"
-        required: false
+      bicep-folder:
+        description: "Folder to bicep infrastructure files (eg /infra/bicep)"
+        required: true
         type: string
-        default: './GitVersionConfig.yml'
+      requires-bicep-submodule:
+        description: "If need to checkout the Avani.Core.Infra.Bicep submodule (obsolete, should migrate to using avm)"
+        required: false
+        type: boolean
+        default: false
     secrets:
       ACR_USERNAME:
         required: true
       ACR_PASSWORD:
         required: true
-      FEED_ACCESSTOKEN:
-        required: true
       OCTOPUS_URL:
         required: true
       OCTOPUS_API_KEY:
         required: true
+      FEED_ACCESSTOKEN:
+        required: false
+      NEXT_PUBLIC_MUI_KEY:
+        required: false
 
 jobs:
   version-info:
@@ -50,9 +65,22 @@ jobs:
     secrets: inherit
 
   package-infrastructure:
-    needs: version-info
-    uses: ./.github/workflows/_octopus-artifact.yml
+    needs:
+      - version-info
+    uses: ./.github/workflows/_infrastructure-artifact.yml
     with:
       infrastructure-prefix: ${{ inputs.infrastructure-prefix }}
       version-number: ${{ needs.version-info.outputs.version-number }}
+      bicep-paths: ${{ inputs.bicep-paths }}
+      bicep-folder: ${{ inputs.bicep-folder }}
+      requires-bicep-submodule: ${{ inputs.requires-bicep-submodule }}
+    secrets: inherit
+
+  octopus-release:
+    needs:
+      - package-infrastructure
+      - build-docker
+    uses: ./.github/workflows/_octopus-publish.yml
+    with:
+      artifact-file: ${{ needs.package-infrastructure.outputs.artifact-file }}
     secrets: inherit
