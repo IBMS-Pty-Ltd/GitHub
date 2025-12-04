@@ -3,18 +3,7 @@ name: dotnet_pull_request
 on:
   workflow_call:
     inputs:
-      # solution-path:
-      #   description: "Path to the solution file to restore. If not provided, searches the current directory for a project or solution"
-      #   required: false
-      #   type: string
-      #   default: '.'
-      # dependency-config-path:
-      #   description: "Path to the Directory.Packages.props)"
-      #   required: false
-      #   type: string
-      #   default: './Directory.Packages.props'
       node-version:
-        description: "Node Version"
         required: false
         type: string
         default: '20.x'
@@ -24,18 +13,9 @@ on:
       NEXT_PUBLIC_MUI_KEY:
         required: true
 
-permissions:
-  contents: write
-  packages: write
-
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
-    # env:
-    #   DOCKER_REGISTRY: 'conregavanidevaueast.azurecr.io'
 
     steps:
       - name: Checkout repository
@@ -85,51 +65,15 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Test
-        run: npm run test-ci
+      - name: Run Tests
+        run: npm run test-ci # run tests (configured to use jest-junit reporter)
 
-      # Install the NuGet Credential Provider for Azure Artifacts. Documentation can be found at https://github.com/microsoft/artifacts-credprovider
-      # - name: Prepare NuGet Credential Provider
-      #   shell: bash
-      #   run: |
-      #     curl -L https://aka.ms/install-artifacts-credprovider.sh  | sh
-
-      # - name: Setup .NET
-      #   uses: actions/setup-dotnet@v4
-      #   with:
-      #     dotnet-version: ${{ inputs.dotnet-version }}
-
-      # - name: Cache dependencies
-      #   id: cache_deps
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: ~/.nuget/packages
-      #     key: ${{ runner.os }}-nuget-${{ hashFiles(inputs.dependency-config-path) }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-nuget-
-
-      # - name: Restore dependencies
-      #   shell: bash
-      #   run: dotnet restore ${{ inputs.solution-path }}
-
-      # - name: Build Solution
-      #   run: dotnet build ${{ inputs.solution-path }} --no-restore
-
-      # - name: Run Tests
-      #   run: dotnet test ${{ inputs.solution-path }} --no-build --logger "trx;LogFileName=test_results.trx" --results-directory ./TestResults
-
-      # - name: Upload test results
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: TestResults
-      #     path: ./TestResults
-
-      # - name: Report test results
-      #   if: ${{ !cancelled() }}
-      #   uses: dorny/test-reporter@v1
-      #   with:
-      #     name: dotnet-test-results
-      #     path: ./TestResults/*.trx
-      #     reporter: dotnet-trx
-      #     fail-on-error: true
-      #     fail-on-empty: false
+      - name: Report test results
+        if: ${{ !cancelled() }}
+        uses: dorny/test-reporter@v2
+        with:
+          name: test-results
+          path: reports/jest-*.xml
+          reporter: jest-junit
+          fail-on-error: true
+          fail-on-empty: false
